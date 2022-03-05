@@ -1,19 +1,20 @@
 const User = require("./auth.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const createHttpError = require("http-errors");
 
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    if (!user) return next(new Error(404, "User not found"));
+    if (!user) return next(createHttpError(404, "User not found"));
     const isPassword = await bcrypt.compare(password, user.password);
-    if (!isPassword) return next(new Error(401, "Invalid password"));
+    if (!isPassword) return next(createHttpError(401, "Incorrect password"));
     const newUser = {
       id: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      username: user.username,
       email: user.email,
+      avatar: user.avatar,
       role: user.role,
     };
     const accessToken = jwt.sign(newUser, process.env.JWT_SECRET, {
@@ -21,8 +22,7 @@ exports.login = async (req, res, next) => {
     });
     res.json({
       success: true,
-      data: newUser,
-      accessToken,
+      data: { ...newUser, accessToken },
     });
   } catch (error) {
     next(error);
@@ -31,22 +31,23 @@ exports.login = async (req, res, next) => {
 
 exports.register = async (req, res, next) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { username, email, password } = req.body;
     const user = await User.findOne({ email });
-    if (user) return next(new Error(400, "User already exists"));
+    if (user) return next(createHttpError(400, "user already exists"));
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({
-      firstName,
-      lastName,
+      username,
       email,
       password: hashedPassword,
+      avatar: req.file.path,
+      roles: ["user"],
     });
     const newUserData = {
       id: newUser._id,
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
+      username: newUser.username,
       email: newUser.email,
-      role: newUser.role,
+      avatar: newUser.avatar,
+      roles: ["user"],
     };
     const accessToken = jwt.sign(newUserData, process.env.JWT_SECRET, {
       expiresIn: "1h",

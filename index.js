@@ -2,6 +2,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const { init } = require("./versions/v1/helpers/socketio");
 
 //Connection db
 require("./versions/v1/helpers/init.mongodb");
@@ -34,6 +35,8 @@ app.use("*", (_req, res) => {
 const errorHandler = require("./versions/v1/error/handleError");
 app.use(errorHandler);
 
-app.listen(process.env.PORT, () => {
+const server = app.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);
 });
+
+init(server);

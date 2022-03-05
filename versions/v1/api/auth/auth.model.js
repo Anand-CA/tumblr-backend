@@ -2,11 +2,11 @@ const mongoose = require("mongoose");
 
 const userSchema = mongoose.Schema(
   {
-    firstName: {
+    avatar: {
       type: String,
       required: true,
     },
-    lastName: {
+    username: {
       type: String,
       required: true,
     },
@@ -19,13 +19,13 @@ const userSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    role: {
-      type: String,
-      default: "User",
+    roles: {
+      type: [String],
+      required: true,
+      enum: ["user", "admin"],
     },
     resetLinkToken: {
       type: String,
-      default: "",
     },
   },
   { timestamps: true }
