@@ -4,11 +4,6 @@ const userSchema = mongoose.Schema(
   {
     avatar: {
       type: String,
-      required: true,
-    },
-    username: {
-      type: String,
-      required: true,
     },
     email: {
       type: String,
@@ -17,12 +12,9 @@ const userSchema = mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
     },
-    roles: {
-      type: [String],
-      required: true,
-      enum: ["user", "admin"],
+    source: {
+      type: String,
     },
     resetLinkToken: {
       type: String,

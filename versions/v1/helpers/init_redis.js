@@ -1,24 +1,29 @@
-const Redis = require("ioredis");
-const client = new Redis();
+const redis = require('redis');
 
-client.on("connect", () => {
-  console.log("Connected To Redis");
-});
+const client = redis.createClient({
+    port: 6379,
+    host : "127.0.0.1"
+})
 
-client.on("ready", () => {
-  console.log("Ready");
-});
+client.on('connect',()=>{
+    console.log("Connected To Redis")
+})
 
-client.on("error", (err) => {
-  console.log(err.message);
-});
+client.on('ready',()=>{
+    console.log("Ready")
+})
 
-client.on("end", () => {
-  console.log("Disconnected From Redis");
-});
+client.on('error',(err)=>{
+    console.log(err.message)
+})
 
-process.on("SIGINT", () => {
-  client.quit();
-});
+client.on('end',()=>{
+    console.log("Disconnected From Redis")
+})
 
-module.exports = client;
+process.on('SIGINT',()=>{
+    client.quit()
+})
+
+
+module.exports = client

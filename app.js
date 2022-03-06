@@ -1,8 +1,10 @@
-// import
 const express = require("express");
 const cors = require("cors");
+const passport = require("passport");
 require("dotenv").config();
-const { init } = require("./versions/v1/helpers/socketio");
+
+// passport google
+require("./versions/v1/configs/passport/google");
 
 //Connection db
 require("./versions/v1/helpers/init.mongodb");
@@ -14,6 +16,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());
+app.use(passport.initialize());
 
 // OK route.
 app.get("/", (_req, res) => {
@@ -39,4 +42,4 @@ const server = app.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);
 });
 
-init(server);
+require("./versions/v1/helpers/socketio").init(server);

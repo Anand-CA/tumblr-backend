@@ -1,4 +1,3 @@
-
 let io;
 
 let users = [];
@@ -19,7 +18,7 @@ const getUser = (userId) => {
 exports.init = (server) => {
   io = require("socket.io")(server, {
     cors: {
-      origin: "*",
+      origin: process.env.CLIENT_BASE_URL,
       methods: ["GET", "POST"],
     },
   });
@@ -38,4 +37,11 @@ exports.init = (server) => {
       removeUser(socket.id);
     });
   });
+};
+
+exports.getIO = () => {
+  if (!io) {
+    throw new Error("Socket.io not initialized");
+  }
+  return io;
 };
