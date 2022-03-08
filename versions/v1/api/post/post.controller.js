@@ -14,14 +14,13 @@ exports.createPost = (req, res, next) => {
       "user",
       "-__v -password"
     );
-    getIO().emit("post", { mPost });
-    console.log(getSocket());
-    getSocket().broadcast.emit("post-notify", {
-      msg: `${mPost.user.email} has uploaded a post`,
-    });
+    await getIO().emit("post", { mPost });
     res.status(200).json({
       success: true,
       message: "Post created",
+      user: {
+        email: mPost.user.email,
+      },
     });
   });
 };
@@ -37,4 +36,19 @@ exports.getPosts = (req, res, next) => {
         posts,
       });
     });
+};
+
+exports.deletePost = (req, res, next) => {
+  Post.findByIdAndDelete(req.params.id)
+    .then((post) => {
+      if (!post) {
+        return next(createError(404, "Post not found"));
+      }
+      getIO().emit("post-delete", { post });
+      res.status(200).json({
+        success: true,
+        message: "Post deleted",
+      });
+    })
+    .catch((err) => next(createError(500, err)));
 };

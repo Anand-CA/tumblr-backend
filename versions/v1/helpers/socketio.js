@@ -16,7 +16,7 @@ const getUser = (userId) => {
   return users.find((user) => user.userId === userId);
 };
 
-exports.init = (server) => {
+exports.init = async (server) => {
   io = require("socket.io")(server, {
     cors: {
       origin: process.env.CLIENT_BASE_URL,
@@ -26,6 +26,7 @@ exports.init = (server) => {
   io.use((socket, next) => {
     const userId = socket.handshake.auth.userId;
     socket.userId = userId;
+    s = socket;
     next();
   });
 
@@ -33,10 +34,13 @@ exports.init = (server) => {
     console.log("a user connected", socket.id);
     addUser(socket.userId, socket.id);
     console.log({ users });
-    s = socket;
+    socket.on("notify-post", (data) => {
+      socket.broadcast.emit("post-notify", data);
+    });
     socket.on("disconnect", () => {
       console.log("user disconnected", socket.id);
       removeUser(socket.id);
+      console.log({ users });
     });
   });
 };
@@ -49,5 +53,8 @@ exports.getIO = () => {
 };
 
 exports.getSocket = () => {
+  if (!s) {
+    throw new Error("Socket.io not initialized");
+  }
   return s;
 };
