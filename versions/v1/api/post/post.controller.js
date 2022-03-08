@@ -1,5 +1,5 @@
 const createError = require("http-errors");
-const { getSocket, getIO } = require("../../helpers/socketio");
+const { getSocket, getIO, s } = require("../../helpers/socketio");
 const Post = require("./post.model");
 
 exports.createPost = (req, res, next) => {
