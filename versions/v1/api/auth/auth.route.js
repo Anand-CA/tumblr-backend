@@ -4,7 +4,10 @@ const router = express.Router();
 const passport = require("passport");
 const upload = require("../../configs/multer");
 const User = require("./auth.model");
-const { signAccessToken } = require("../../helpers/jwt_helper");
+const {
+  signAccessToken,
+  verifyAccessToken,
+} = require("../../helpers/jwt_helper");
 const { OAuth2Client } = require("google-auth-library");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -26,13 +29,25 @@ router.post("/google", async (req, res) => {
       source: "google",
     });
   }
-  const token = signAccessToken(user._id);
+  const token = await signAccessToken(user._id);
   res.status(200).json({
     success: true,
     message: "Login success",
     accesstoken: token,
     user,
   });
+});
+
+router.get("/currentuser", verifyAccessToken, (req, res) => {
+  User.findById(req.payload.userId)
+    .select("-__v -password")
+    .then((user) => {
+      res.status(200).json({
+        success: true,
+        message: "Get current user success",
+        user,
+      });
+    });
 });
 
 // router.get(

@@ -1,4 +1,5 @@
 let io;
+let s;
 
 let users = [];
 
@@ -32,6 +33,7 @@ exports.init = (server) => {
     console.log("a user connected", socket.id);
     addUser(socket.userId, socket.id);
     console.log({ users });
+    s = socket;
     socket.on("disconnect", () => {
       console.log("user disconnected", socket.id);
       removeUser(socket.id);
@@ -44,4 +46,8 @@ exports.getIO = () => {
     throw new Error("Socket.io not initialized");
   }
   return io;
+};
+
+exports.getSocket = () => {
+  return s;
 };

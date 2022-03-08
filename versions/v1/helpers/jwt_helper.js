@@ -36,7 +36,6 @@ module.exports = {
         return next(createError.Unauthorized(message));
       }
       req.payload = payload;
-      console.log(req.payload);
       next();
     });
   },
