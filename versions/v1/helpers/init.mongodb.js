@@ -2,10 +2,13 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 mongoose
-  .connect("mongodb://localhost:27017/tumblr", {
-    useUnifiedTopology: true,
-    useNewUrlParser: true,
-  })
+  .connect(
+    "mongodb+srv://anand:anand123@tumblrcluster.6jkrj.mongodb.net/tumblr?retryWrites=true&w=majority",
+    {
+      useUnifiedTopology: true,
+      useNewUrlParser: true,
+    }
+  )
   .then(() => {
     console.log("Database Connected");
   })
