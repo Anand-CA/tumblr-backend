@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const passport = require("passport");
-const compression = require('compression')
+const compression = require("compression");
 require("dotenv").config();
 
 // passport google
@@ -14,7 +14,7 @@ require("./versions/v1/helpers/init.mongodb");
 const app = express();
 
 // middleware
-app.use(compression())
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors());

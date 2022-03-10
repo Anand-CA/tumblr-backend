@@ -12,14 +12,14 @@ const removeUser = (socketId) => {
   users = users.filter((user) => user.socketId !== socketId);
 };
 
-const getUser = (userId) => {
+exports.getUser = (userId) => {
   return users.find((user) => user.userId === userId);
 };
 
 exports.init = async (server) => {
   io = require("socket.io")(server, {
     cors: {
-      origin: process.env.CLIENT_BASE_URL,
+      origin: "*",
       methods: ["GET", "POST"],
     },
   });

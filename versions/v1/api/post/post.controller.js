@@ -1,11 +1,21 @@
 const createError = require("http-errors");
-const { getSocket, getIO, s } = require("../../helpers/socketio");
+const { getIO, getUser } = require("../../helpers/socketio");
 const Post = require("./post.model");
+const User = require("../auth/auth.model");
+const { cloudinary } = require("../../configs/multer");
 
-exports.createPost = (req, res, next) => {
+exports.createPost = async (req, res, next) => {
+  const result = await cloudinary.uploader.upload(req.file.path, {
+    folder: "tumblr-clone",
+    transformation: [{ width: 600, crop: "scale" }, { quality: "auto" }],
+  });
+
   const newPost = new Post({
     user: req.payload.userId,
-    image: req.file.path,
+    image: {
+      url: result.url,
+      public_id: result.public_id,
+    },
     caption: req.body.captionTxt,
   });
   newPost.save(async (err, post) => {
@@ -19,7 +29,7 @@ exports.createPost = (req, res, next) => {
       success: true,
       message: "Post created",
       user: {
-        email: mPost.user.email,
+        displayName: mPost.user.displayName,
       },
     });
   });
@@ -40,15 +50,66 @@ exports.getPosts = (req, res, next) => {
 
 exports.deletePost = (req, res, next) => {
   Post.findByIdAndDelete(req.params.id)
-    .then((post) => {
+    .then(async (post) => {
       if (!post) {
         return next(createError(404, "Post not found"));
       }
-      getIO().emit("post-delete", { post });
+      cloudinary.uploader.destroy(post.image.public_id, (err, result) => {
+        if (err) return next(createError(500, err));
+      });
+      await getIO().emit("post-delete", { postId: post._id });
       res.status(200).json({
         success: true,
         message: "Post deleted",
       });
     })
     .catch((err) => next(createError(500, err)));
+};
+
+exports.likePost = async (req, res, next) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return next(createError(404, "Post not found"));
+    const user = await User.findById(req.payload.userId);
+    if (!user) return next(createError(404, "User not found"));
+    const newPost = await Post.findByIdAndUpdate(req.params.id, {
+      $push: { likes: user._id },
+    }).populate("user", "-__v -password");
+
+    const { socketId } = getUser(newPost.user._id.toString());
+    if (socketId && newPost.user.id.toString() !== user._id.toString()) {
+      getIO()
+        .to(socketId)
+        .emit("like", {
+          msg: `${user.displayName} liked your post`,
+        });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Post liked",
+      userId: user._id,
+    });
+  } catch (error) {
+    next(createError(500, error));
+  }
+};
+
+exports.dislikePost = async (req, res, next) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) return next(createError(404, "Post not found"));
+    const user = await User.findById(req.payload.userId);
+    if (!user) return next(createError(404, "User not found"));
+    const newPost = await Post.findByIdAndUpdate(req.params.id, {
+      $pull: { likes: user._id },
+    });
+    res.status(200).json({
+      success: true,
+      message: "Post disliked",
+      userId: user._id,
+    });
+  } catch (error) {
+    next(createError(500, error));
+  }
 };

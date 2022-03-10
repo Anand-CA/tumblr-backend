@@ -2,6 +2,11 @@ const User = require("./auth.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const createHttpError = require("http-errors");
+const { OAuth2Client } = require("google-auth-library");
+const createError = require("http-errors");
+const { signAccessToken } = require("../../helpers/jwt_helper");
+const { getIO, getUser } = require("../../helpers/socketio");
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 exports.login = async (req, res, next) => {
   try {
@@ -60,4 +65,118 @@ exports.register = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+exports.currentUser = (req, res, next) => {
+  User.findById(req.payload.userId)
+    .select("-__v -password")
+    .then((user) => {
+      res.status(200).json({
+        success: true,
+        message: "Get current user success",
+        user,
+      });
+    })
+    .catch((err) => next(createError(500, err)));
+};
+
+exports.googleAuth = async (req, res, next) => {
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: req.body.tokenId,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+
+    let user = await User.findOne({
+      email: payload.email,
+      source: "google",
+    });
+    if (!user) {
+      user = await User.create({
+        // covert to lowercase
+
+        displayName: payload.name,
+        email: payload.email,
+        avatar: payload.picture,
+        source: "google",
+      });
+    }
+    const token = await signAccessToken(user._id);
+    res.status(200).json({
+      success: true,
+      message: "Login success",
+      accesstoken: token,
+      user,
+    });
+  } catch (error) {
+    next(createError(500, error));
+  }
+};
+
+exports.followUser = (req, res, next) => {
+  const { id } = req.params;
+  const { userId } = req.payload;
+  if (id === userId) {
+    return next(createError(400, "You can't follow yourself"));
+  }
+  User.findByIdAndUpdate(id, {
+    $push: { followers: userId },
+  })
+    .then((user) => {
+      if (!user) {
+        return next(createError(404, "User not found"));
+      }
+      User.findByIdAndUpdate(userId, {
+        $push: { following: id },
+      })
+        .then((user) => {
+          if (!user) {
+            return next(createError(404, "User not found"));
+          }
+
+          const { socketId } = getUser(id);
+
+          getIO()
+            .to(socketId)
+            .emit("follow", {
+              msg: `${user.displayName} started following you`,
+            });
+          res.status(200).json({
+            success: true,
+            message: "User followed",
+            id: userId,
+          });
+        })
+        .catch((err) => next(createError(500, err)));
+    })
+    .catch((err) => next(createError(500, err)));
+};
+
+exports.unfollowUser = (req, res, next) => {
+  const { id } = req.params;
+  const { userId } = req.payload;
+  User.findByIdAndUpdate(id, {
+    $pull: { followers: userId },
+  })
+    .then((user) => {
+      if (!user) {
+        return next(createError(404, "User not found"));
+      }
+      User.findByIdAndUpdate(userId, {
+        $pull: { following: id },
+      })
+        .then((user) => {
+          if (!user) {
+            return next(createError(404, "User not found"));
+          }
+          res.status(200).json({
+            success: true,
+            message: "User unfollowed",
+            id: userId,
+          });
+        })
+        .catch((err) => next(createError(500, err)));
+    })
+    .catch((err) => next(createError(500, err)));
 };

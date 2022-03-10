@@ -1,54 +1,20 @@
 const express = require("express");
-const { login, register } = require("./auth.controller");
-const router = express.Router();
-const passport = require("passport");
-const upload = require("../../configs/multer");
-const User = require("./auth.model");
 const {
-  signAccessToken,
-  verifyAccessToken,
-} = require("../../helpers/jwt_helper");
-const { OAuth2Client } = require("google-auth-library");
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+  followUser,
+  unfollowUser,
+  googleAuth,
+  currentUser,
+} = require("./auth.controller");
+const router = express.Router();
+const upload = require("../../configs/multer");
+const { verifyAccessToken } = require("../../helpers/jwt_helper");
 
-router.post("/google", async (req, res) => {
-  const ticket = await client.verifyIdToken({
-    idToken: req.body.tokenId,
-    audience: process.env.GOOGLE_CLIENT_ID,
-  });
-  const payload = ticket.getPayload();
+router.post("/google", googleAuth);
 
-  let user = await User.findOne({
-    email: payload.email,
-    source: "google",
-  });
-  if (!user) {
-    user = await User.create({
-      email: payload.email,
-      avatar: payload.picture,
-      source: "google",
-    });
-  }
-  const token = await signAccessToken(user._id);
-  res.status(200).json({
-    success: true,
-    message: "Login success",
-    accesstoken: token,
-    user,
-  });
-});
+router.get("/currentuser", verifyAccessToken, currentUser);
 
-router.get("/currentuser", verifyAccessToken, (req, res) => {
-  User.findById(req.payload.userId)
-    .select("-__v -password")
-    .then((user) => {
-      res.status(200).json({
-        success: true,
-        message: "Get current user success",
-        user,
-      });
-    });
-});
+router.patch("/follow/:id", verifyAccessToken, followUser);
+router.patch("/unfollow/:id", verifyAccessToken, unfollowUser);
 
 // router.get(
 //   "/google/start",
