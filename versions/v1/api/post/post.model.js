@@ -7,12 +7,17 @@ const postSchema = mongoose.Schema(
       ref: "User",
       required: true,
     },
-    image: String,
-    caption: String,
-    likeCount: {
-      type: Number,
-      default: 0,
+    image: {
+      url: String,
+      public_id: String,
     },
+    caption: String,
+    likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     commentCount: {
       type: Number,
       default: 0,

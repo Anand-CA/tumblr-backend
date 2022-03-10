@@ -22,13 +22,19 @@ cloudinary.config({
   api_secret: "7seFVRibeZ7pZ0LXsHzaJo03Yc4",
 });
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "tumblr-clone",
-  },
-});
+const storage = multer.diskStorage({});
+
+// const storage = new CloudinaryStorage({
+//   cloudinary: cloudinary,
+//   params: {
+//     folder: "tumblr-clone",
+//     transformation: [{ width: 600, crop: "scale" }, { quality: "auto" }],
+//   },
+// });
 
 const upload = multer({ storage: storage });
 
-module.exports = upload;
+module.exports = {
+  upload,
+  cloudinary,
+};
