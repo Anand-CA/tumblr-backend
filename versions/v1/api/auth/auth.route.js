@@ -4,6 +4,7 @@ const {
   unfollowUser,
   googleAuth,
   currentUser,
+  getallusers,
 } = require("./auth.controller");
 const router = express.Router();
 const upload = require("../../configs/multer");
@@ -12,7 +13,7 @@ const { verifyAccessToken } = require("../../helpers/jwt_helper");
 router.post("/google", googleAuth);
 
 router.get("/currentuser", verifyAccessToken, currentUser);
-
+router.get("/allusers", getallusers);
 router.patch("/follow/:id", verifyAccessToken, followUser);
 router.patch("/unfollow/:id", verifyAccessToken, unfollowUser);
 

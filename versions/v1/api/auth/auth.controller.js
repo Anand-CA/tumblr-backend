@@ -5,7 +5,7 @@ const createHttpError = require("http-errors");
 const { OAuth2Client } = require("google-auth-library");
 const createError = require("http-errors");
 const { signAccessToken } = require("../../helpers/jwt_helper");
-const { getIO, getUser } = require("../../helpers/socketio");
+const { getIO, getUser, users } = require("../../helpers/socketio");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 exports.login = async (req, res, next) => {
@@ -94,8 +94,6 @@ exports.googleAuth = async (req, res, next) => {
     });
     if (!user) {
       user = await User.create({
-        // covert to lowercase
-
         displayName: payload.name,
         email: payload.email,
         avatar: payload.picture,
@@ -135,17 +133,22 @@ exports.followUser = (req, res, next) => {
             return next(createError(404, "User not found"));
           }
 
-          const { socketId } = getUser(id);
+          const receiver = getUser(id);
+          if (receiver) {
+            getIO()
+              .to(receiver.socketId)
+              .emit("follow-notify", {
+                msg: `${user.displayName} is now following you`,
+              });
+          }
 
-          getIO()
-            .to(socketId)
-            .emit("follow", {
-              msg: `${user.displayName} started following you`,
-            });
+          getIO().emit("follow", {
+            senderId: userId,
+            receiverId: id,
+          });
           res.status(200).json({
             success: true,
             message: "User followed",
-            id: userId,
           });
         })
         .catch((err) => next(createError(500, err)));
@@ -170,6 +173,10 @@ exports.unfollowUser = (req, res, next) => {
           if (!user) {
             return next(createError(404, "User not found"));
           }
+          getIO().emit("unfollow", {
+            senderId: userId,
+            receiverId: id,
+          });
           res.status(200).json({
             success: true,
             message: "User unfollowed",
@@ -179,4 +186,17 @@ exports.unfollowUser = (req, res, next) => {
         .catch((err) => next(createError(500, err)));
     })
     .catch((err) => next(createError(500, err)));
+};
+
+exports.getallusers = async (req, res, next) => {
+  try {
+    const users = await User.find({});
+    res.status(200).json({
+      success: true,
+      message: "Get all users success",
+      users,
+    });
+  } catch (error) {
+    next(createHttpError(500, error));
+  }
 };

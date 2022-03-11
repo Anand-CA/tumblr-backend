@@ -1,5 +1,5 @@
 const createError = require("http-errors");
-const { getIO, getUser } = require("../../helpers/socketio");
+const { getIO, getUser, users } = require("../../helpers/socketio");
 const Post = require("./post.model");
 const User = require("../auth/auth.model");
 const { cloudinary } = require("../../configs/multer");
@@ -72,9 +72,17 @@ exports.likePost = async (req, res, next) => {
     if (!post) return next(createError(404, "Post not found"));
     const user = await User.findById(req.payload.userId);
     if (!user) return next(createError(404, "User not found"));
-    const newPost = await Post.findByIdAndUpdate(req.params.id, {
-      $push: { likes: user._id },
-    }).populate("user", "-__v -password");
+    const newPost = await Post.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: { likes: user._id },
+      },
+      { new: true }
+    ).populate("user", "-__v -password");
+    console.log(
+      "🚀 ~ file: post.controller.js ~ line 78 ~ exports.likePost= ~ newPost",
+      newPost
+    );
 
     const { socketId } = getUser(newPost.user._id.toString());
     if (socketId && newPost.user.id.toString() !== user._id.toString()) {
@@ -84,6 +92,10 @@ exports.likePost = async (req, res, next) => {
           msg: `${user.displayName} liked your post`,
         });
     }
+
+    getIO().emit("likesCount", {
+      likesCount: newPost.likes.length,
+    });
 
     res.status(200).json({
       success: true,
@@ -101,8 +113,15 @@ exports.dislikePost = async (req, res, next) => {
     if (!post) return next(createError(404, "Post not found"));
     const user = await User.findById(req.payload.userId);
     if (!user) return next(createError(404, "User not found"));
-    const newPost = await Post.findByIdAndUpdate(req.params.id, {
-      $pull: { likes: user._id },
+    const newPost = await Post.findByIdAndUpdate(
+      req.params.id,
+      {
+        $pull: { likes: user._id },
+      },
+      { new: true }
+    );
+    getIO().emit("likesCount", {
+      likesCount: newPost.likes.length,
     });
     res.status(200).json({
       success: true,

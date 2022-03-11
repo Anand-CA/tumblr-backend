@@ -35,6 +35,11 @@ module.exports = {
           err.name === "JsonWebTokenError" ? "Unauthorized" : err.message;
         return next(createError.Unauthorized(message));
       }
+      // check if jwt is expired
+      if (payload.exp < Date.now() / 1000) {
+        return next(createError.Unauthorized("Token expired"));
+      }
+
       req.payload = payload;
       next();
     });

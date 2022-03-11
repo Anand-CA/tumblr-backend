@@ -12,11 +12,11 @@ const removeUser = (socketId) => {
   users = users.filter((user) => user.socketId !== socketId);
 };
 
-exports.getUser = (userId) => {
+const getUser = (userId) => {
   return users.find((user) => user.userId === userId);
 };
 
-exports.init = async (server) => {
+const init = async (server) => {
   io = require("socket.io")(server, {
     cors: {
       origin: "*",
@@ -40,12 +40,13 @@ exports.init = async (server) => {
     socket.on("disconnect", () => {
       console.log("user disconnected", socket.id);
       removeUser(socket.id);
+      socket.broadcast.emit("user-disconnected", socket.userId);
       console.log({ users });
     });
   });
 };
 
-exports.getIO = () => {
+const getIO = () => {
   if (!io) {
     throw new Error("Socket.io not initialized");
   }
@@ -57,4 +58,11 @@ exports.getSocket = () => {
     throw new Error("Socket.io not initialized");
   }
   return s;
+};
+
+module.exports = {
+  users,
+  init,
+  getUser,
+  getIO,
 };
