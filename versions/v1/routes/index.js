@@ -5,5 +5,6 @@ const postRouter = require("../api/post/post.route");
 
 router.use("/auth", authRoute);
 router.use("/post", postRouter);
+router.use("/notification", require("../api/notification/notification.route"));
 
 module.exports = router;

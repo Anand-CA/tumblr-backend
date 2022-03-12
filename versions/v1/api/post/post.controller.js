@@ -3,6 +3,7 @@ const { getIO, getUser, users } = require("../../helpers/socketio");
 const Post = require("./post.model");
 const User = require("../auth/auth.model");
 const { cloudinary } = require("../../configs/multer");
+const { createNotif } = require("../notification/notification.controller");
 
 exports.createPost = async (req, res, next) => {
   const result = await cloudinary.uploader.upload(req.file.path, {
@@ -79,16 +80,18 @@ exports.likePost = async (req, res, next) => {
       },
       { new: true }
     ).populate("user", "-__v -password");
-    console.log(
-      "🚀 ~ file: post.controller.js ~ line 78 ~ exports.likePost= ~ newPost",
-      newPost
-    );
 
-    const { socketId } = getUser(newPost.user._id.toString());
-    if (socketId && newPost.user.id.toString() !== user._id.toString()) {
+    await createNotif({
+      user: newPost.user._id,
+      msg: `${user.displayName} liked your post`,
+    });
+
+    const socketUser = getUser(newPost.user._id.toString());
+
+    if (socketUser && socketUser.userId !== req.payload.userId) {
       getIO()
-        .to(socketId)
-        .emit("like", {
+        .to(socketUser.socketId)
+        .emit("like-notify", {
           msg: `${user.displayName} liked your post`,
         });
     }

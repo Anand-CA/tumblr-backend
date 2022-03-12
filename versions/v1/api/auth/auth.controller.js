@@ -6,6 +6,7 @@ const { OAuth2Client } = require("google-auth-library");
 const createError = require("http-errors");
 const { signAccessToken } = require("../../helpers/jwt_helper");
 const { getIO, getUser, users } = require("../../helpers/socketio");
+const { createNotif } = require("../notification/notification.controller");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 exports.login = async (req, res, next) => {
@@ -133,6 +134,10 @@ exports.followUser = (req, res, next) => {
             return next(createError(404, "User not found"));
           }
 
+          createNotif({
+            userId: id,
+            msg: `${user.displayName} is now following you`,
+          });
           const receiver = getUser(id);
           if (receiver) {
             getIO()
