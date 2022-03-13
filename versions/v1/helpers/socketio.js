@@ -1,5 +1,4 @@
 let io;
-let s;
 
 let users = [];
 
@@ -51,13 +50,6 @@ const getIO = () => {
     throw new Error("Socket.io not initialized");
   }
   return io;
-};
-
-exports.getSocket = () => {
-  if (!s) {
-    throw new Error("Socket.io not initialized");
-  }
-  return s;
 };
 
 module.exports = {

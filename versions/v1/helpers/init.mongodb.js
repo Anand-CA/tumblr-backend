@@ -15,3 +15,14 @@ mongoose
   .catch((err) => {
     console.log("🔥 ", err.message);
   });
+
+const db = mongoose.connection;
+
+db.once("open", () => {
+  const postCol = db.collection("posts");
+  const postStream = postCol.watch();
+
+  postStream.on("change", (change) => {
+    console.log(change);
+  });
+});
