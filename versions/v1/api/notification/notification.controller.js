@@ -47,8 +47,21 @@ const createNotif = async (data) => {
   }
 };
 
+const deleteNotif = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await Notification.findByIdAndDelete(id);
+    res.json({
+      success: true,
+    });
+  } catch (error) {
+    next(createError(500, error));
+  }
+};
+
 module.exports = {
   getNotifUser,
   readNotif,
   createNotif,
+  deleteNotif,
 };

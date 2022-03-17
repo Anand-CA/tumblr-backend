@@ -29,6 +29,9 @@ const userSchema = mongoose.Schema(
     source: {
       type: String,
     },
+    lastSeen: {
+      type: Date,
+    },
     resetLinkToken: {
       type: String,
     },

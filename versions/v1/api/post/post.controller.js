@@ -6,34 +6,57 @@ const { cloudinary } = require("../../configs/multer");
 const { createNotif } = require("../notification/notification.controller");
 
 exports.createPost = async (req, res, next) => {
-  const result = await cloudinary.uploader.upload(req.file.path, {
-    folder: "tumblr-clone",
-    transformation: [{ width: 600, crop: "scale" }, { quality: "auto" }],
-  });
-
-  const newPost = new Post({
-    user: req.payload.userId,
-    image: {
-      url: result.url,
-      public_id: result.public_id,
-    },
-    caption: req.body.captionTxt,
-  });
-  newPost.save(async (err, post) => {
-    if (err) return next(createError(500, err));
-    const mPost = await Post.findById(post._id).populate(
-      "user",
-      "-__v -password"
-    );
-    await getIO().emit("post", { mPost });
-    res.status(200).json({
-      success: true,
-      message: "Post created",
-      user: {
-        displayName: mPost.user.displayName,
+  if (req.body.postType === "text") {
+    const newPost = new Post({
+      user: req.payload.userId,
+      image: {
+        url: req.body.imageUrl,
       },
+      caption: req.body.captionTxt,
     });
-  });
+    newPost.save(async (err, post) => {
+      if (err) return next(createError(500, err));
+      const mPost = await Post.findById(post._id).populate(
+        "user",
+        "-__v -password"
+      );
+      res.status(200).json({
+        success: true,
+        message: "Post created",
+        user: {
+          displayName: mPost.user.displayName,
+        },
+      });
+    });
+  } else {
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "tumblr-clone",
+      transformation: [{ width: 600, crop: "scale" }, { quality: "auto" }],
+    });
+
+    const newPost = new Post({
+      user: req.payload.userId,
+      image: {
+        url: result.url,
+        public_id: result.public_id,
+      },
+      caption: req.body.captionTxt,
+    });
+    newPost.save(async (err, post) => {
+      if (err) return next(createError(500, err));
+      const mPost = await Post.findById(post._id).populate(
+        "user",
+        "-__v -password"
+      );
+      res.status(200).json({
+        success: true,
+        message: "Post created",
+        user: {
+          displayName: mPost.user.displayName,
+        },
+      });
+    });
+  }
 };
 
 exports.getPosts = (req, res, next) => {
@@ -47,6 +70,15 @@ exports.getPosts = (req, res, next) => {
         posts,
       });
     });
+};
+
+exports.getPostById = async (postId) => {
+  try {
+    const post = await Post.findById(postId).populate("user", "-__v -password");
+    return post;
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 exports.deletePost = (req, res, next) => {

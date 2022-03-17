@@ -205,3 +205,11 @@ exports.getallusers = async (req, res, next) => {
     next(createHttpError(500, error));
   }
 };
+
+exports.setLastSeen = (userId) => {
+  User.findByIdAndUpdate(userId, {
+    lastSeen: Date.now(),
+  })
+    .then((user) => {})
+    .catch((err) => console.log(err));
+};

@@ -1,4 +1,7 @@
 const mongoose = require("mongoose");
+const { getPostById } = require("../api/post/post.controller");
+const { getIO } = require("../helpers/socketio");
+
 require("dotenv").config();
 
 mongoose
@@ -24,5 +27,22 @@ db.once("open", () => {
 
   postStream.on("change", (change) => {
     console.log(change);
+
+    if (change.operationType === "insert") {
+      getPostById(change.documentKey._id)
+        .then((post) => {
+          getIO().emit("new-post", post);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
+
+    if (change.operationType === "delete") {
+      const deletedId = change.documentKey._id;
+      getIO().emit("delete-post", {
+        postId: deletedId,
+      });
+    }
   });
 });

@@ -32,6 +32,7 @@ const init = async (server) => {
   io.on("connection", (socket) => {
     console.log("a user connected", socket.id);
     addUser(socket.userId, socket.id);
+    io.emit("connected:users", { users });
     console.log({ users });
     socket.on("notify-post", (data) => {
       socket.broadcast.emit("post-notify", data);
@@ -39,7 +40,16 @@ const init = async (server) => {
     socket.on("disconnect", () => {
       console.log("user disconnected", socket.id);
       removeUser(socket.id);
-      socket.broadcast.emit("user-disconnected", socket.userId);
+      setLastSeen(socket.userId);
+      io.emit("disconnected:users", {
+        // update date
+        users: users.map((user) => {
+          if (user.userId === socket.userId) {
+            user.lastSeen = Date.now();
+          }
+          return user;
+        }),
+      });
       console.log({ users });
     });
   });
@@ -58,3 +68,5 @@ module.exports = {
   getUser,
   getIO,
 };
+
+const { setLastSeen } = require("../api/auth/auth.controller");
