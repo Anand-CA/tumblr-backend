@@ -32,6 +32,10 @@ const userSchema = mongoose.Schema(
     lastSeen: {
       type: Date,
     },
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
     resetLinkToken: {
       type: String,
     },

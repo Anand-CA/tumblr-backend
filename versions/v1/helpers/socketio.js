@@ -32,23 +32,18 @@ const init = async (server) => {
   io.on("connection", (socket) => {
     console.log("a user connected", socket.id);
     addUser(socket.userId, socket.id);
-    io.emit("connected:users", { users });
+    makeUserOnline(socket.userId).then((data) => {
+      io.emit("user-online", data);
+    });
     console.log({ users });
     socket.on("notify-post", (data) => {
       socket.broadcast.emit("post-notify", data);
     });
     socket.on("disconnect", () => {
       console.log("user disconnected", socket.id);
-      removeUser(socket.id);
-      setLastSeen(socket.userId);
-      io.emit("disconnected:users", {
-        // update date
-        users: users.map((user) => {
-          if (user.userId === socket.userId) {
-            user.lastSeen = Date.now();
-          }
-          return user;
-        }),
+      makeUserOffline(socket.userId).then((data) => {
+        socket.broadcast.emit("user-offline", data);
+        removeUser(socket.id);
       });
       console.log({ users });
     });
@@ -69,4 +64,7 @@ module.exports = {
   getIO,
 };
 
-const { setLastSeen } = require("../api/auth/auth.controller");
+const {
+  makeUserOnline,
+  makeUserOffline,
+} = require("../api/auth/auth.controller");

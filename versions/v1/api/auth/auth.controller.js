@@ -207,9 +207,53 @@ exports.getallusers = async (req, res, next) => {
 };
 
 exports.setLastSeen = (userId) => {
-  User.findByIdAndUpdate(userId, {
-    lastSeen: Date.now(),
-  })
-    .then((user) => {})
-    .catch((err) => console.log(err));
+  try {
+    return User.findByIdAndUpdate(
+      userId,
+      {
+        lastSeen: Date.now(),
+      },
+      { new: true }
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+exports.makeUserOnline = async (userId) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        isOnline: true,
+      },
+      { new: true }
+    );
+    return {
+      id: user._id,
+      isOnline: user.isOnline,
+    };
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+exports.makeUserOffline = async (userId) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        isOnline: false,
+        lastSeen: Date.now(),
+      },
+      { new: true, upsert: true }
+    );
+    return {
+      id: user._id,
+      isOnline: user.isOnline,
+      lastSeen: user.lastSeen,
+    };
+  } catch (error) {
+    console.log(error);
+  }
 };
