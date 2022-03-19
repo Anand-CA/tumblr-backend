@@ -1,28 +1,25 @@
 const mongoose = require("mongoose");
 
-const postSchema = mongoose.Schema(
+const CommentSchema = mongoose.Schema(
   {
-    user: {
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
+      required: true,
+    },
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    image: {
-      url: String,
-      public_id: String,
-    },
-    caption: String,
+    content: String,
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
       },
     ],
-    tags: {
-      type: [String],
-      default: [],
-    },
-    comments: [
+    replies: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Comment",
@@ -34,4 +31,4 @@ const postSchema = mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Post", postSchema);
+module.exports = mongoose.model("Comment", CommentSchema);

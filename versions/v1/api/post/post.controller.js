@@ -62,6 +62,20 @@ exports.createPost = async (req, res, next) => {
 exports.getPosts = (req, res, next) => {
   Post.find({})
     .populate("user", "-__v -password")
+    .populate({
+      path: "comments",
+      populate: {
+        path: "userId",
+        model: "User",
+        select: "-__v -password",
+      },
+      options: {
+        sort: {
+          createdAt: -1,
+        },
+      },
+    })
+    // sort comments array in descending order
     .sort({ createdAt: -1 })
     .then((posts) => {
       res.status(200).json({
@@ -69,7 +83,8 @@ exports.getPosts = (req, res, next) => {
         message: "Get posts success",
         posts,
       });
-    });
+    })
+    .catch((err) => next(createError(500, err)));
 };
 
 exports.getPostById = async (postId) => {
