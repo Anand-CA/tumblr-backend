@@ -21,28 +21,28 @@ mongoose
 
 const db = mongoose.connection;
 
-db.once("open", () => {
-  const postCol = db.collection("posts");
-  const postStream = postCol.watch();
+// db.once("open", () => {
+//   const postCol = db.collection("posts");
+//   const postStream = postCol.watch();
 
-  postStream.on("change", (change) => {
-    console.log(change);
+//   postStream.on("change", (change) => {
+//     console.log(change);
 
-    if (change.operationType === "insert") {
-      getPostById(change.documentKey._id)
-        .then((post) => {
-          getIO().emit("new-post", post);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
+//     if (change.operationType === "insert") {
+//       getPostById(change.documentKey._id)
+//         .then((post) => {
+//           getIO().emit("new-post", post);
+//         })
+//         .catch((err) => {
+//           console.log(err);
+//         });
+//     }
 
-    if (change.operationType === "delete") {
-      const deletedId = change.documentKey._id;
-      getIO().emit("delete-post", {
-        postId: deletedId,
-      });
-    }
-  });
-});
+//     if (change.operationType === "delete") {
+//       const deletedId = change.documentKey._id;
+//       getIO().emit("delete-post", {
+//         postId: deletedId,
+//       });
+//     }
+//   });
+// });

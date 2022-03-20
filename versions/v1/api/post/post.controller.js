@@ -20,12 +20,23 @@ exports.createPost = async (req, res, next) => {
         "user",
         "-__v -password"
       );
+
+      getIO().emit("post-create", mPost);
+
+      users.forEach((user) => {
+        if (user.id !== req.payload.userId) {
+          getIO()
+            .to(user.socketId)
+            .emit(
+              "post-create-notify",
+              `${mPost.user.displayName} posted a new post`
+            );
+        }
+      });
+
       res.status(200).json({
         success: true,
         message: "Post created",
-        user: {
-          displayName: mPost.user.displayName,
-        },
       });
     });
   } else {
@@ -48,12 +59,23 @@ exports.createPost = async (req, res, next) => {
         "user",
         "-__v -password"
       );
+
+      getIO().emit("post-create", mPost);
+
+      users.forEach((user) => {
+        if (user.userId !== req.payload.userId) {
+          getIO()
+            .to(user.socketId)
+            .emit(
+              "post-create-notify",
+              `${mPost.user.displayName} posted a new post`
+            );
+        }
+      });
+
       res.status(200).json({
         success: true,
         message: "Post created",
-        user: {
-          displayName: mPost.user.displayName,
-        },
       });
     });
   }
@@ -98,14 +120,14 @@ exports.getPostById = async (postId) => {
 
 exports.deletePost = (req, res, next) => {
   Post.findByIdAndDelete(req.params.id)
-    .then(async (post) => {
+    .then((post) => {
       if (!post) {
         return next(createError(404, "Post not found"));
       }
       cloudinary.uploader.destroy(post.image.public_id, (err, result) => {
         if (err) return next(createError(500, err));
       });
-      await getIO().emit("post-delete", { postId: post._id });
+      getIO().emit("post-delete", { postId: post._id });
       res.status(200).json({
         success: true,
         message: "Post deleted",
