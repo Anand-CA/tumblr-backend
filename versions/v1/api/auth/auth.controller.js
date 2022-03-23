@@ -113,52 +113,94 @@ exports.googleAuth = async (req, res, next) => {
   }
 };
 
-exports.followUser = (req, res, next) => {
-  const { id } = req.params;
-  const { userId } = req.payload;
-  if (id === userId) {
-    return next(createError(400, "You can't follow yourself"));
-  }
-  User.findByIdAndUpdate(id, {
-    $push: { followers: userId },
-  })
-    .then((user) => {
-      if (!user) {
-        return next(createError(404, "User not found"));
+exports.followUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.payload;
+    if (id === userId) {
+      return next(createError(400, "You can't follow yourself"));
+    }
+    const followedUser = await User.findByIdAndUpdate(
+      id,
+      {
+        $push: { followers: userId },
+      },
+      {
+        new: true,
       }
-      User.findByIdAndUpdate(userId, {
+    );
+
+    const followingUser = await User.findByIdAndUpdate(
+      userId,
+      {
         $push: { following: id },
-      })
-        .then((user) => {
-          if (!user) {
-            return next(createError(404, "User not found"));
-          }
+      },
+      { new: true }
+    );
 
-          createNotif({
-            userId: id,
-            msg: `${user.displayName} is now following you`,
-          });
-          const receiver = getUser(id);
-          if (receiver) {
-            getIO()
-              .to(receiver.socketId)
-              .emit("follow-notify", {
-                msg: `${user.displayName} is now following you`,
-              });
-          }
+    await createNotif({
+      userId: id,
+      msg: `${followingUser.displayName} is now following you`,
+    });
+    const receiver = getUser(id);
+    if (receiver) {
+      await getIO()
+        .to(receiver.socketId)
+        .emit("follow-notify", {
+          msg: `${followingUser.displayName} is now following you`,
+        });
+    }
 
-          getIO().emit("follow", {
-            senderId: userId,
-            receiverId: id,
-          });
-          res.status(200).json({
-            success: true,
-            message: "User followed",
-          });
-        })
-        .catch((err) => next(createError(500, err)));
-    })
-    .catch((err) => next(createError(500, err)));
+    await getIO().emit("follow", {
+      senderId: userId,
+      receiverId: id,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "User followed",
+    });
+  } catch (error) {
+    next(createError(500, error));
+  }
+
+  // .then((user) => {
+  //   if (!user) {
+  //     return next(createError(404, "User not found"));
+  //   }
+  //   User.findByIdAndUpdate(userId, {
+  //     $push: { following: id },
+  //   })
+  //     .then((user) => {
+  //       if (!user) {
+  //         return next(createError(404, "User not found"));
+  //       }
+
+  //       createNotif({
+  //         userId: id,
+  //         msg: `${user.displayName} is now following you`,
+  //       });
+  //       const receiver = getUser(id);
+  //       if (receiver) {
+  //         getIO()
+  //           .to(receiver.socketId)
+  //           .emit("follow-notify", {
+  //             msg: `${user.displayName} is now following you`,
+  //           });
+  //       }
+
+  //       getIO().emit("follow", {
+  //         senderId: userId,
+  //         receiverId: id,
+  //       });
+  //       res.status(200).json({
+  //         success: true,
+  //         message: "User followed",
+  //       });
+  //     })
+  //     .catch((err) => next(createError(500, err)));
+  // })
+  // .catch((err) => next(createError(500, err)));
 };
 
 exports.unfollowUser = (req, res, next) => {

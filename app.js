@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const compression = require("compression");
+const morgan = require("morgan");
 require("dotenv").config();
-
 
 //Connection db
 require("./versions/v1/helpers/init.mongodb");
@@ -11,6 +11,7 @@ require("./versions/v1/helpers/init.mongodb");
 const app = express();
 
 // middleware
+app.use(morgan("dev"));
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
