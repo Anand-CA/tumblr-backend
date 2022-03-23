@@ -1,4 +1,5 @@
 const express = require("express");
+const { verifyAccessToken } = require("../../helpers/jwt_helper");
 const router = express.Router();
 const {
   getallComments,
@@ -13,9 +14,8 @@ router.get("/all", getallComments);
 router.post("/add", addComment);
 router.delete("/delete/:id", deleteComment);
 router.post("/update", updateComment);
-
-router.patch("/like", likeComment);
-// router.patch("/unlike");
+router.patch("/like/:commentId", verifyAccessToken, likeComment);
+router.patch("/dislike/:commentId", verifyAccessToken, unlikeComment);
 // router.post("/reply", replyComment);
 
 module.exports = router;

@@ -1,7 +1,9 @@
 const createError = require("http-errors");
 const Comment = require("./comment.model");
 const Post = require("../post/post.model");
-const { getIO } = require("../../helpers/socketio");
+const User = require("../auth/auth.model");
+const { getIO, getUser } = require("../../helpers/socketio");
+const { createNotif } = require("../notification/notification.controller");
 
 exports.getallComments = async (req, res, next) => {
   try {
@@ -24,15 +26,32 @@ exports.addComment = async (req, res, next) => {
       content,
     });
 
-    await Post.findByIdAndUpdate(postId, {
+    const updatedPost = await Post.findByIdAndUpdate(postId, {
       $push: { comments: comment._id },
     });
 
     Comment.findById(comment._id)
       .populate("userId")
-      .exec(function (err, comment) {
+      .exec(async function (err, comment) {
         if (err) return next(createError(500, err));
         getIO().emit("comment-added", comment);
+
+        const notif = await createNotif({
+          user: updatedPost.user,
+          msg: `${comment.userId.displayName} commented on your post`,
+        });
+        if (comment.userId != userId) {
+          const socketuser = getUser(updatedPost.user.toString());
+          if (socketuser) {
+            getIO()
+              .to(socketuser.socketId)
+              .emit("comment-notify", {
+                msg: `${comment.userId.displayName} commented on your post`,
+                notif,
+              });
+          }
+        }
+
         res.status(200).json({
           success: true,
         });
@@ -74,10 +93,61 @@ exports.updateComment = async (req, res, next) => {
 
 exports.likeComment = async (req, res, next) => {
   try {
-    const { commentId } = req.body;
-    const comment = await Comment.findByIdAndUpdate(commentId, {
-      $inc: { likes: 1 },
+    const { commentId } = req.params;
+    const comment = await Comment.findByIdAndUpdate(
+      commentId,
+      {
+        $addToSet: { likes: req.payload.userId },
+      },
+      { new: true }
+    );
+
+    await getIO().emit("comment-like", {
+      commentId: comment._id,
+      userId: req.payload.userId,
+      postId: comment.postId,
     });
+
+    if (comment.userId != req.payload.userId) {
+      const likePerson = await User.findById(req.payload.userId);
+      const notif = await createNotif({
+        user: comment.userId,
+        msg: `${likePerson.displayName} liked your comment`,
+      });
+
+      const socketuser = getUser(comment.userId.toString());
+      if (socketuser) {
+        getIO()
+          .to(socketuser.socketId)
+          .emit("comment-like-notify", {
+            msg: `${likePerson.displayName} liked your comment`,
+            notif,
+          });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: comment,
+    });
+  } catch (err) {
+    next(createError(500, err));
+  }
+};
+
+exports.unlikeComment = async (req, res, next) => {
+  try {
+    const { commentId } = req.params;
+    const comment = await Comment.findByIdAndUpdate(commentId, {
+      $pull: { likes: req.payload.userId },
+    });
+
+    await getIO().emit("comment-dislike", {
+      commentId: comment._id,
+      userId: req.payload.userId,
+      postId: comment.postId,
+    });
+
     res.status(200).json({
       success: true,
       data: comment,

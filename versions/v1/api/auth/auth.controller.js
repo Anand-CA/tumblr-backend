@@ -120,7 +120,7 @@ exports.followUser = async (req, res, next) => {
     if (id === userId) {
       return next(createError(400, "You can't follow yourself"));
     }
-    const followedUser = await User.findByIdAndUpdate(
+    await User.findByIdAndUpdate(
       id,
       {
         $push: { followers: userId },
@@ -138,16 +138,18 @@ exports.followUser = async (req, res, next) => {
       { new: true }
     );
 
-    await createNotif({
-      userId: id,
+    const notif = await createNotif({
+      user: id,
       msg: `${followingUser.displayName} is now following you`,
     });
+    console.log({ notif });
     const receiver = getUser(id);
     if (receiver) {
       await getIO()
         .to(receiver.socketId)
         .emit("follow-notify", {
           msg: `${followingUser.displayName} is now following you`,
+          notif,
         });
     }
 

@@ -38,12 +38,9 @@ const readNotif = async (req, res, next) => {
 const createNotif = async (data) => {
   try {
     const notification = await Notification.create(data);
-    res.json({
-      success: true,
-      notification,
-    });
+    return notification;
   } catch (error) {
-    createError(500, error);
+    console.log(error);
   }
 };
 
