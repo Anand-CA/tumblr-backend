@@ -4,7 +4,9 @@ const Notification = require("./notification.model");
 const getNotifUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const notifications = await Notification.find({ user: id });
+    const notifications = await Notification.find({ user: id }).sort({
+      createdAt: -1,
+    });
     res.json({
       success: true,
       notifications,

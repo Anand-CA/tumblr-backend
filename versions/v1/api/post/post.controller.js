@@ -150,7 +150,7 @@ exports.likePost = async (req, res, next) => {
       { new: true }
     ).populate("user", "-__v -password");
 
-    await createNotif({
+    const notif = await createNotif({
       user: newPost.user._id,
       msg: `${user.displayName} liked your post`,
     });
@@ -160,8 +160,9 @@ exports.likePost = async (req, res, next) => {
     if (socketUser && socketUser.userId !== req.payload.userId) {
       getIO()
         .to(socketUser.socketId)
-        .emit("like-notify", {
+        .emit("post-like-notify", {
           msg: `${user.displayName} liked your post`,
+          notif,
         });
     }
 
